@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>SwitchID</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- 头部 -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="4" fill="white"/>
+            <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="18" cy="6" r="3" fill="#4ADE80"/>
+            <path d="M16.5 6l1 1 2-2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="header-info">
+          <h1>账号切换</h1>
+          <div class="current-site">
+            <span class="site-icon">🌐</span>
+            <span id="current-domain">加载中...</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="active-profile-badge" class="active-profile-badge" style="display: none;">
+          <span class="active-dot"></span>
+          <span id="active-profile-name">-</span>
+        </div>
+        <button id="btn-more-menu" class="btn-icon" title="更多操作">⋮</button>
+        <button id="btn-settings" class="btn-icon" title="设置">⚙</button>
+      </div>
+    </header>
+
+    <!-- 快速操作 -->
+    <div class="quick-actions">
+      <button id="btn-save-quick" class="quick-btn save">💾 保存账号</button>
+      <button id="btn-clear-quick" class="quick-btn clear">🚪 退出登录</button>
+    </div>
+
+    <main class="main-content">
+      <!-- 保存面板 -->
+      <div id="save-panel" class="save-panel" style="display: none;">
+        <div class="save-panel-header">
+          <span>保存当前账号</span>
+          <button id="btn-close-save" class="btn-close">×</button>
+        </div>
+        <div class="save-panel-body">
+          <input type="text" id="profile-name-input" class="input" placeholder="给这个账号起个名字..." maxlength="20" />
+          <div class="input-hint" id="save-hint">💡 请确保已登录后再保存</div>
+          <div class="color-picker">
+            <span class="color-label">颜色标识:</span>
+            <div class="colors" id="color-picker"></div>
+          </div>
+          <button id="btn-save-confirm" class="btn btn-primary btn-block">✓ 确认保存</button>
+        </div>
+      </div>
+
+      <!-- 账号列表 -->
+      <div id="profiles-section" class="profiles-section">
+        <div id="recent-section" class="recent-section" style="display: none;">
+          <div class="section-title">⏱️ 最近使用</div>
+          <div id="recent-list" class="recent-list"></div>
+        </div>
+
+        <div class="section-header">
+          <span class="section-title">已保存的账号</span>
+          <div class="section-actions">
+            <button id="btn-auto-rotate" class="btn-mini" title="自动轮换设置">🔄</button>
+            <select id="sort-select" class="sort-select" title="排序方式">
+              <option value="recent">最近使用</option>
+              <option value="name">按名称</option>
+              <option value="created">创建时间</option>
+              <option value="useCount">使用次数</option>
+            </select>
+            <span class="profile-count" id="profile-count">0 个</span>
+          </div>
+        </div>
+
+        <div id="auto-rotate-bar" class="auto-rotate-bar" style="display: none;">
+          <span>🔄</span>
+          <span id="rotate-info"></span>
+          <button class="rotate-stop" id="btn-stop-rotate" title="停止轮换">✕</button>
+        </div>
+
+        <div class="search-box" id="search-box" style="display: none;">
+          <input type="text" id="search-input" placeholder="搜索账号..." />
+        </div>
+
+        <div id="profile-list" class="profile-list"></div>
+      </div>
+
+      <!-- 空状态 -->
+      <div id="empty-state" class="empty-state" style="display: none;">
+        <div class="empty-icon">👤</div>
+        <h3>还没有保存的账号</h3>
+        <p>登录网站后,点击上方「保存账号」按钮</p>
+        <p class="tip">💡 支持保存多个账号,一键快速切换</p>
+      </div>
+
+      <!-- 加载中 -->
+      <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+        <span>加载中...</span>
+      </div>
+
+      <!-- 不支持的页面 -->
+      <div id="unsupported" class="empty-state" style="display: none;">
+        <div class="empty-icon">🚫</div>
+        <h3>此页面不支持</h3>
+        <p>请在普通网页上使用此扩展</p>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span class="footer-tip">💡 按 1-9 快速切换</span>
+      <span class="footer-divider">·</span>
+      <button id="btn-export-quick" class="footer-btn">📤 导出</button>
+      <button id="btn-import-quick" class="footer-btn">📥 导入</button>
+      <input type="file" id="import-file-input" accept=".json" style="display: none;" />
+    </footer>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"><span id="toast-icon"></span><span id="toast-message"></span></div>
+
+  <!-- 确认对话框 -->
+  <div id="confirm-modal" class="modal" style="display: none;">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-icon" id="modal-icon">⚠️</div>
+      <h3 id="modal-title">确认操作</h3>
+      <p id="modal-message">确定要执行此操作吗?</p>
+      <div class="modal-actions">
+        <button id="modal-cancel" class="btn btn-secondary">取消</button>
+        <button id="modal-confirm" class="btn btn-danger">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑对话框 -->
+  <div id="edit-modal" class="modal" style="display: none;">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content edit-modal-content">
+      <h3>编辑账号</h3>
+      <div class="edit-form">
+        <div class="input-group">
+          <label>账号名称</label>
+          <input type="text" id="edit-name-input" class="input" maxlength="20" />
+        </div>
+        <div class="input-group">
+          <label>备注说明</label>
+          <input type="text" id="edit-note-input" class="input" placeholder="可选,如:工作账号" maxlength="50" />
+        </div>
+        <div class="input-group">
+          <label>🏷️ 账号标签</label>
+          <div id="edit-tags-list" class="tags-list"></div>
+          <input type="text" id="edit-tags-input" class="input" placeholder="输入标签后按回车添加" maxlength="10" />
+          <div class="preset-tags">
+            <span class="preset-tag" data-tag="主号">主号</span>
+            <span class="preset-tag" data-tag="小号">小号</span>
+            <span class="preset-tag" data-tag="测试">测试</span>
+            <span class="preset-tag" data-tag="工作">工作</span>
+            <span class="preset-tag" data-tag="个人">个人</span>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>🔐 登录凭证备忘(仅本地存储)</label>
+          <input type="text" id="edit-login-hint" class="input" placeholder="如:邮箱 xxx@xx.com" maxlength="100" />
+          <input type="password" id="edit-password-hint" class="input" placeholder="密码提示(仅供自己参考)" maxlength="50" style="margin-top:6px;" />
+          <div class="input-hint">⚠️ 仅 Base64 混淆存储,请只记录提示信息</div>
+        </div>
+        <div class="input-group">
+          <label>颜色标识</label>
+          <div class="colors" id="edit-color-picker"></div>
+        </div>
+        <details class="advanced-config">
+          <summary>🔧 高级配置(UA/指纹)</summary>
+          <div class="advanced-config-body">
+            <div class="input-group">
+              <label>独立 User-Agent</label>
+              <select id="edit-ua-preset" class="input">
+                <option value="">跟随全局设置</option>
+                <option value="chrome-win">Chrome Win</option>
+                <option value="chrome-mac">Chrome Mac</option>
+                <option value="firefox-win">Firefox Win</option>
+                <option value="safari-mac">Safari Mac</option>
+                <option value="mobile-android">Android</option>
+                <option value="mobile-ios">iOS</option>
+                <option value="custom">自定义...</option>
+              </select>
+              <input type="text" id="edit-custom-ua" class="input" placeholder="自定义 UA 字符串" style="display:none; margin-top:6px;" />
+            </div>
+            <div class="input-group">
+              <label>指纹防关联</label>
+              <div class="fingerprint-actions">
+                <button type="button" id="btn-random-fingerprint" class="btn btn-secondary btn-sm">🎲 随机生成</button>
+                <button type="button" id="btn-clear-fingerprint" class="btn btn-secondary btn-sm">✕ 清除</button>
+              </div>
+              <div id="fingerprint-status" class="fingerprint-status">未配置</div>
+            </div>
+          </div>
+        </details>
+      </div>
+      <div class="modal-actions">
+        <button id="edit-cancel" class="btn btn-secondary">取消</button>
+        <button id="edit-save" class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自动轮换设置 -->
+  <div id="rotate-modal" class="modal" style="display: none;">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <h3>🔄 自动轮换设置</h3>
+      <div class="input-group">
+        <label>轮换间隔</label>
+        <select id="rotate-interval" class="input">
+          <option value="5">5 分钟</option>
+          <option value="10">10 分钟</option>
+          <option value="15">15 分钟</option>
+          <option value="30" selected>30 分钟</option>
+          <option value="60">1 小时</option>
+          <option value="120">2 小时</option>
+          <option value="360">6 小时</option>
+          <option value="720">12 小时</option>
+          <option value="1440">24 小时</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>参与轮换的账号</label>
+        <div id="rotate-profiles-list" class="rotate-profiles-list"></div>
+        <div class="input-hint">💡 至少选择 2 个账号</div>
+      </div>
+      <div class="modal-actions">
+        <button id="rotate-cancel" class="btn btn-secondary">取消</button>
+        <button id="rotate-start" class="btn btn-primary">开始轮换</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全局菜单 -->
+  <div id="global-menu" class="global-menu" style="display: none;">
+    <button class="menu-item" data-action="refresh-current">🔄 刷新当前账号</button>
+    <button class="menu-item" data-action="check-health">🔍 检查账号状态</button>
+    <div class="menu-divider"></div>
+    <button class="menu-item" data-action="export-domain">📤 导出当前网站</button>
+    <button class="menu-item" data-action="export-all">📦 导出全部数据</button>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>

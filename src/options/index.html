@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>SwitchID Local 设置</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="page-header">
+      <h1>SwitchID Local · 设置</h1>
+      <p class="subtitle">纯本地多账号管理 · 零网络请求 · 数据仅存于本机</p>
+    </header>
+
+    <nav class="nav">
+      <button class="nav-item active" data-section="profiles">账号管理</button>
+      <button class="nav-item" data-section="settings">偏好设置</button>
+      <button class="nav-item" data-section="fingerprint">指纹保护</button>
+      <button class="nav-item" data-section="data">数据管理</button>
+      <button class="nav-item" data-section="help">使用帮助</button>
+    </nav>
+
+    <!-- 账号管理 -->
+    <section id="section-profiles" class="section active">
+      <h2>账号管理</h2>
+      <div class="stats">
+        <div class="stat-card"><span class="stat-num" id="stat-domains">0</span><span class="stat-label">网站</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-profiles">0</span><span class="stat-label">账号</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-size">0 KB</span><span class="stat-label">占用空间</span></div>
+      </div>
+      <div class="toolbar">
+        <h3>所有账号</h3>
+        <div>
+          <button id="btn-batch-mode" class="btn btn-secondary btn-sm">批量删除</button>
+          <span id="batch-actions" style="display:none;">
+            <span id="selected-count" class="selected-count">已选 0 项</span>
+            <button id="btn-batch-delete" class="btn btn-danger btn-sm">删除所选</button>
+            <button id="btn-cancel-select" class="btn btn-secondary btn-sm">取消</button>
+          </span>
+        </div>
+      </div>
+      <div id="all-profiles" class="all-profiles"></div>
+      <div id="empty-profiles" class="empty" style="display:none;">还没有保存任何账号。打开要管理的网站,点击工具栏图标即可保存。</div>
+    </section>
+
+    <!-- 偏好设置 -->
+    <section id="section-settings" class="section">
+      <h2>偏好设置</h2>
+
+      <h3>外观</h3>
+      <div class="card">
+        <div class="form-row">
+          <div>
+            <div class="form-label">深色主题</div>
+            <div class="form-desc">弹窗与设置页使用深色配色</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="theme-dark"><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <h3>切换行为</h3>
+      <div class="card">
+        <div class="form-row">
+          <div>
+            <div class="form-label">切换后自动刷新相关标签页</div>
+            <div class="form-desc">刷新该网站所有已打开的标签,使新账号立即生效</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="auto-refresh"><span class="slider"></span></label>
+        </div>
+        <div class="form-row">
+          <div>
+            <div class="form-label">切换后关闭其他相关标签页</div>
+            <div class="form-desc">仅保留当前标签,其余同网站标签全部关闭</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="close-related-tabs"><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <h3>账号维护</h3>
+      <div class="card">
+        <div class="form-row">
+          <div>
+            <div class="form-label">健康检查通知</div>
+            <div class="form-desc">每天检查一次 Cookie 过期情况并提醒</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="health-check"><span class="slider"></span></label>
+        </div>
+        <div class="form-row">
+          <div>
+            <div class="form-label">自动刷新快过期的当前账号</div>
+            <div class="form-desc">当前激活账号有大量 Cookie 即将过期时,自动重新保存</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="auto-refresh-expiring"><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <h3>🎭 User-Agent 伪装(全局)</h3>
+      <div class="card">
+        <div class="form-row">
+          <div>
+            <div class="form-label">启用全局 UA 伪装</div>
+            <div class="form-desc">对所有网站的请求生效;账号可单独配置覆盖全局</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="ua-enabled"><span class="slider"></span></label>
+        </div>
+        <div id="ua-settings" style="display:none;">
+          <div class="form-row column">
+            <div class="form-label">UA 预设</div>
+            <select id="ua-preset" class="input">
+              <option value="chrome-win">Chrome Windows</option>
+              <option value="chrome-mac">Chrome macOS</option>
+              <option value="firefox-win">Firefox Windows</option>
+              <option value="safari-mac">Safari macOS</option>
+              <option value="mobile-android">Android 手机</option>
+              <option value="mobile-ios">iPhone</option>
+              <option value="custom">自定义...</option>
+            </select>
+            <input type="text" id="custom-ua" class="input" placeholder="自定义 UA 字符串" style="display:none; margin-top:8px;">
+            <button id="btn-apply-ua" class="btn btn-primary btn-sm" style="margin-top:8px; align-self:flex-start;">应用 UA</button>
+            <div class="form-desc" id="current-ua-display" style="margin-top:6px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 指纹保护 -->
+    <section id="section-fingerprint" class="section">
+      <h2>指纹保护</h2>
+      <div class="card">
+        <div class="form-row">
+          <div>
+            <div class="form-label">启用指纹防关联</div>
+            <div class="form-desc">为每个网站维持独立稳定的浏览器指纹(Canvas/WebGL/音频等),降低跨站关联</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="fingerprint-enabled"><span class="slider"></span></label>
+        </div>
+        <div id="fingerprint-options">
+          <div class="form-row">
+            <div>
+              <div class="form-label">Canvas 指纹噪声</div>
+              <div class="form-desc">强防护,默认开启</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="fp-canvas"><span class="slider"></span></label>
+          </div>
+          <div class="form-row">
+            <div>
+              <div class="form-label">WebGL 显卡信息伪装</div>
+              <div class="form-desc">强防护,默认开启</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="fp-webgl"><span class="slider"></span></label>
+          </div>
+          <div class="form-row">
+            <div>
+              <div class="form-label">音频指纹噪声</div>
+              <div class="form-desc">强防护,默认开启</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="fp-audio"><span class="slider"></span></label>
+          </div>
+          <div class="form-row">
+            <div>
+              <div class="form-label">时区伪装</div>
+              <div class="form-desc">⚠️ 可能影响网站时间显示,默认关闭</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="fp-timezone"><span class="slider"></span></label>
+          </div>
+          <div class="form-row">
+            <div>
+              <div class="form-label">DOMRect 微噪声</div>
+              <div class="form-desc">⚠️ 极少数网站排版可能受影响,默认关闭</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="fp-domrect"><span class="slider"></span></label>
+          </div>
+          <div class="form-row">
+            <div>
+              <div class="form-label">禁用 WebRTC</div>
+              <div class="form-desc">⚠️ 会破坏视频通话,P2P 网站可能异常,默认关闭</div>
+            </div>
+            <label class="switch"><input type="checkbox" id="fp-webrtc"><span class="slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <h3>白名单(不注入指纹的网站)</h3>
+      <div class="card">
+        <div class="form-row">
+          <input type="text" id="whitelist-input" class="input" placeholder="输入域名,如 example.com(支持 *.example.com)">
+          <button id="btn-add-whitelist" class="btn btn-primary btn-sm" style="flex-shrink:0;">添加</button>
+        </div>
+        <div id="whitelist-list" class="whitelist-list"></div>
+        <div id="empty-whitelist" class="form-desc">白名单为空:所有网站默认启用指纹保护</div>
+      </div>
+    </section>
+
+    <!-- 数据管理 -->
+    <section id="section-data" class="section">
+      <h2>数据管理</h2>
+      <h3>备份与恢复</h3>
+      <div class="card">
+        <p class="form-desc">导出内容包含所有网站的账号 Cookie 快照。⚠️ 备份文件包含登录凭证,请妥善保管,不要发送给他人。</p>
+        <div class="btn-row">
+          <button id="btn-export" class="btn btn-primary">📤 导出全部数据</button>
+          <button id="btn-import" class="btn btn-secondary">📥 导入数据</button>
+          <input type="file" id="file-input" accept=".json" style="display:none;">
+        </div>
+      </div>
+
+      <h3>⚠️ 危险操作</h3>
+      <div class="card danger-zone">
+        <div class="form-row">
+          <div>
+            <div class="form-label">清空全部数据</div>
+            <div class="form-desc">删除所有已保存账号、设置和指纹配置,不可恢复</div>
+          </div>
+          <button id="btn-clear-all" class="btn btn-danger">清空</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 使用帮助 -->
+    <section id="section-help" class="section">
+      <h2>使用帮助</h2>
+      <div class="card">
+        <ol class="help-list">
+          <li><b>保存账号</b>:登录某个网站后,点击工具栏的 SwitchID 图标 →「保存账号」,当前登录状态(Cookie)会存为一个档案。</li>
+          <li><b>切换账号</b>:在账号列表点击任意档案,扩展会清空该网站 Cookie 并写入所选账号,自动刷新页面。弹窗内按数字 <b>1-9</b> 可快速切换,快捷键 <b>Alt+Shift+S</b> 打开面板。</li>
+          <li><b>刷新账号</b>:账号快过期或登录态更新后,切换到该账号,在「⋯」菜单里选「刷新账号」重新保存 Cookie。</li>
+          <li><b>防重复</b>:保存时如果检测到当前登录的账号已存在,会提示更新而不是重复保存。</li>
+          <li><b>指纹保护</b>:默认为每个网站生成并固定一套随机指纹(显卡/屏幕/Canvas 噪声等),避免多账号被关联。可在「指纹保护」页细分开关或配置白名单。</li>
+          <li><b>独立 UA</b>:编辑账号 → 高级配置,可为单个账号指定独立的 User-Agent,切换时自动生效。</li>
+          <li><b>自动轮换</b>:选择 2 个以上账号并设定间隔,扩展会按时自动轮流切换(适合签到类场景)。</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>🔒 隐私说明</h3>
+        <p class="form-desc">
+          本扩展<b>不包含任何网络请求代码</b>(无 fetch / XMLHttpRequest / WebSocket / sendBeacon),
+          不收集、不上传任何数据。所有账号数据仅保存在浏览器本地(chrome.storage.local)。
+          你可以随时审计 src/ 目录下的全部源码,或查看仓库中的 SECURITY-AUDIT.md。
+        </p>
+      </div>
+    </section>
+  </div>
+  <script src="index.js"></script>
+</body>
+</html>

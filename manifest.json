@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "SwitchID Local - 多账号管理助手",
+  "version": "1.0.0",
+  "description": "一键保存/切换网站登录账号,支持指纹防关联。纯本地版:零网络请求,数据仅存于本机。",
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "SwitchID 账号切换",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "options_page": "src/options/index.html",
+  "permissions": [
+    "storage",
+    "cookies",
+    "tabs",
+    "contextMenus",
+    "declarativeNetRequest",
+    "alarms",
+    "notifications",
+    "scripting",
+    "webNavigation"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "js": ["src/content/page-agent.js"],
+      "matches": ["<all_urls>"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "commands": {
+    "quick-switch": {
+      "description": "打开账号切换面板",
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      }
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
