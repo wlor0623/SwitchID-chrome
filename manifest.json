@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SwitchID Local - 多账号管理助手",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "一键保存/切换网站登录账号,支持指纹防关联。纯本地版:零网络请求,数据仅存于本机。",
   "action": {
     "default_popup": "src/popup/index.html",
@@ -19,6 +19,7 @@
   "permissions": [
     "storage",
     "cookies",
+    "browsingData",
     "tabs",
     "contextMenus",
     "declarativeNetRequest",

@@ -6,6 +6,7 @@
 ## 核心特性
 
 - **账号保存/切换**:登录网站后一键把 Cookie 快照存为命名档案;切换 = 清空该域名 Cookie + 写入目标档案 + 自动刷新相关标签页
+- **一键清空本站数据**:Cookie + Cache + Cache Storage + IndexedDB + localStorage + Service Workers(+ WebSQL/文件系统,若浏览器仍支持)按主域名连子域名一起彻底重置,方便登录下一个账号
 - **重复检测**:保存时通过身份特征 Cookie 判断当前登录是否已保存过,避免重复建档
 - **指纹防关联**:每个网站独立且稳定的随机指纹(Canvas/WebGL 显卡/音频/屏幕/Navigator/时区/DOMRect/WebRTC),降低多账号关联风险
 - **独立 UA**:全局或按账号配置 User-Agent(declarativeNetRequest 请求头改写)

@@ -344,7 +344,7 @@ async function doSave(name) {
 }
 
 async function clearCookies() {
-  showConfirm('退出登录', '确定要清除当前网站的登录状态吗?', '🚪', async () => {
+  showConfirm('退出登录', '确定要清除当前网站的登录状态吗?\n(仅清除 Cookie)', '🚪', async () => {
     try {
       const res = await send({ action: 'clearCookies', domain: currentDomain });
       if (res.success) {
@@ -360,6 +360,37 @@ async function clearCookies() {
       showToast('清除失败', 'error');
     }
   });
+}
+
+// 一键清空本站全部数据:Cookie + 缓存 + Cache Storage + IndexedDB +
+// localStorage + Service Workers(+ 已废弃的 WebSQL/文件系统,若浏览器仍支持)
+async function wipeSiteData() {
+  showConfirm(`清空 ${mainDomain || currentDomain} 全部数据`,
+    '将清空该网站(含子域名)在本机的:\n' +
+    '🍪 Cookie 登录状态\n' +
+    '💾 localStorage / IndexedDB\n' +
+    '📦 Cache / Cache Storage\n' +
+    '⚙️ Service Worker\n\n' +
+    '相当于网站数据彻底重置,适合登录下一个账号前使用。已保存的账号档案不受影响。是否继续?',
+    '🧹', async () => {
+      try {
+        const res = await send({ action: 'clearSiteData', domain: currentDomain });
+        if (res.success) {
+          activeProfile = null;
+          updateActiveBadge();
+          if (res.storageCleared) {
+            showToast(`已清空 ${res.cookieCount} 个 Cookie 及全部站点存储`, 'success');
+          } else {
+            showToast(`已清空 Cookie(部分存储类型浏览器不支持)`, 'warning');
+          }
+          await reloadRelatedTabs(res);
+        } else {
+          showToast('清空失败: ' + (res.error || '未知错误'), 'error');
+        }
+      } catch (e) {
+        showToast('清空失败', 'error');
+      }
+    });
 }
 
 function confirmDelete(name) {
@@ -787,6 +818,7 @@ function hideConfirm() {
 function setupEventListeners() {
   $('btn-save-quick').onclick = showSavePanel;
   $('btn-clear-quick').onclick = clearCookies;
+  $('btn-wipe-quick').onclick = wipeSiteData;
   $('btn-settings').onclick = () => chrome.runtime.openOptionsPage();
   $('btn-close-save').onclick = hideSavePanel;
   $('btn-save-confirm').onclick = saveProfile;
@@ -804,13 +836,13 @@ function setupEventListeners() {
   };
   $('sort-select').onchange = (e) => { sortBy = e.target.value; renderProfiles(); };
 
-  // 确认框
+  // 确认框(注意:必须先取出回调再 hideConfirm,hideConfirm 会清空 pendingAction)
   $('modal-cancel').onclick = hideConfirm;
   document.querySelector('#confirm-modal .modal-backdrop').onclick = hideConfirm;
   $('modal-confirm').onclick = () => {
+    const action = pendingAction;
     hideConfirm();
-    pendingAction?.();
-    pendingAction = null;
+    action?.();
   };
 
   // 编辑框

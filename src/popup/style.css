@@ -77,6 +77,8 @@ body {
 .quick-btn:hover { border-color: var(--primary); color: var(--primary); }
 .quick-btn.save:hover { border-color: var(--success); color: var(--success); }
 .quick-btn.clear:hover { border-color: var(--danger); color: var(--danger); }
+.quick-btn.wipe:hover { border-color: #9333EA; color: #9333EA; }
+.quick-btn.wipe { font-size: 12px; }
 
 /* ---------- 主内容 ---------- */
 .main-content { flex: 1; overflow-y: auto; padding: 10px 14px; }

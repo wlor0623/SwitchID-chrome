@@ -138,6 +138,108 @@ async function clearCookiesForDomain(domain) {
   }
 }
 
+// 清除单个标签页的 localStorage / sessionStorage。
+// 关键:必须用 world:'MAIN' 在页面主世界执行——ISOLATED world 里的 sessionStorage.clear()
+// 不会被写入标签页的会话存储命名空间,页面一刷新数据就会复活。
+async function clearTabStorage(tabId) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: () => {
+        try { localStorage.clear(); sessionStorage.clear(); } catch (e) { /* 忽略 */ }
+      }
+    });
+    return true;
+  } catch (e) {
+    // 主世界注入失败的兜底:走 content script 消息通道(对 sessionStorage 可能不持久,聊胜于无)
+    try {
+      await chrome.tabs.sendMessage(tabId, { action: 'clearStorage' });
+      return true;
+    } catch (e2) {
+      return false; // 受限页面,跳过
+    }
+  }
+}
+
+// 一键清空本站全部数据(Cookie + Cache + 各类存储 + Service Worker)。
+// 用于切换账号前彻底重置网站在本机的痕迹:
+//   Cookie            -> clearCookiesForDomain(按主域名递归,含全部子域名)
+//   Cache / CacheStorage / IndexedDB / localStorage /
+//   ServiceWorkers / FileSystems / WebSQL -> chrome.browsingData.remove(按 origin)
+async function clearAllSiteData(domain) {
+  try {
+    const mainDomain = getMainDomain(domain);
+    const hostnames = new Set([domain, mainDomain, 'www.' + mainDomain]);
+
+    // 把已打开的同站标签页主机名也纳入,覆盖用户实际在用的子域名
+    try {
+      const tabs = await chrome.tabs.query({});
+      for (const tab of tabs) {
+        if (!tab.url || isBrowserInternalUrl(tab.url)) continue;
+        try {
+          const url = new URL(tab.url);
+          if (getMainDomain(url.hostname) === mainDomain) hostnames.add(url.hostname);
+        } catch (e) { /* 无效 URL,跳过 */ }
+      }
+    } catch (e) { /* 忽略 */ }
+
+    const origins = [];
+    for (const h of hostnames) {
+      origins.push(`https://${h}`, `http://${h}`);
+    }
+
+    // 1. Cookie(自实现按主域名清理,比 browsingData 的按 origin 更彻底)
+    const cookieResult = await clearCookiesForDomain(mainDomain);
+
+    // 2. 缓存与各类存储(browsingData 按 origin 清理)
+    let storageCleared = true;
+    try {
+      await chrome.browsingData.remove({ origins }, {
+        appcache: true,
+        cache: true,
+        cacheStorage: true,
+        cookies: true,
+        fileSystems: true,
+        indexedDB: true,
+        localStorage: true,
+        serviceWorkers: true,
+        webSQL: true
+      });
+    } catch (e) {
+      // 新版浏览器陆续移除了 appcache/fileSystems/webSQL,降级用受支持子集重试
+      try {
+        await chrome.browsingData.remove({ origins }, {
+          cache: true,
+          cacheStorage: true,
+          cookies: true,
+          indexedDB: true,
+          localStorage: true,
+          serviceWorkers: true
+        });
+      } catch (e2) {
+        storageCleared = false;
+      }
+    }
+
+    // 3. 打开中的标签页:清 sessionStorage(browsingData 不处理它,且它随标签页存活)
+    const relatedTabIds = await getRelatedTabIds(mainDomain);
+    for (const tabId of relatedTabIds) {
+      await clearTabStorage(tabId);
+    }
+
+    return {
+      success: true,
+      cookieCount: cookieResult.count,
+      storageCleared,
+      originCount: origins.length,
+      relatedTabIds
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 // 把档案中的 Cookie 写回浏览器。
 // 过期时间统一延长到至少 1 年,避免保存的账号静静失效。
 async function setCookies(cookies) {
@@ -381,10 +483,10 @@ async function loadProfile(domain, profileName) {
     // 5. 可选:关闭其他相关标签页
     if (activeSettings.closeRelatedTabs) await closeRelatedTabs(mainDomain);
 
-    // 6. 通知相关标签页清 localStorage/sessionStorage(部分网站在本地存储里缓存用户态)
+    // 6. 清除相关标签页的 localStorage/sessionStorage(部分网站在本地存储缓存用户态)
     const relatedTabIds = await getRelatedTabIds(mainDomain);
     for (const tabId of relatedTabIds) {
-      try { await chrome.tabs.sendMessage(tabId, { action: 'clearStorage' }); } catch (e) { /* 无 content script,忽略 */ }
+      await clearTabStorage(tabId);
     }
 
     await setActiveProfile(mainDomain, profileName);
@@ -1189,6 +1291,9 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
           break;
         case 'clearCookies':
           response = await clearCookiesForDomain(request.domain);
+          break;
+        case 'clearSiteData':
+          response = await clearAllSiteData(request.domain);
           break;
         case 'getRecentUsage':
           response = await getRecentUsage();
